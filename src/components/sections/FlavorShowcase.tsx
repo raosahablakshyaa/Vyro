@@ -363,7 +363,7 @@ export default function FlavorShowcase() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "100px 24px 80px",
+        padding: "clamp(60px,10vw,100px) 16px clamp(48px,8vw,80px)",
       }}
     >
       {/* Dynamic background */}
@@ -416,16 +416,13 @@ export default function FlavorShowcase() {
       </div>
 
       {/* ── Main row: arrow + canvas + arrow ───────────────────────────── */}
-      <div style={{
-        position: "relative", zIndex: 10,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        gap: 24, width: "100%", maxWidth: 900,
-      }}>
+      <div className="flavor-row" style={{ position: "relative", zIndex: 10 }}>
         <NavArrow dir="left"  color={activeFlavour.accentColor} onClick={prev} />
 
         {/* Canvas wrapper */}
         <motion.div
-          style={{ opacity: canvasOpacity, flex: 1, maxWidth: 420, aspectRatio: "1/1.3" }}
+          className="flavor-canvas-wrap"
+          style={{ opacity: canvasOpacity, flex: 1 }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}

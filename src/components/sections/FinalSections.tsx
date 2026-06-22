@@ -122,7 +122,7 @@ function IngCard({ ing, i }: { ing: typeof INGREDIENTS[0]; i: number }) {
 
 export function IngredientsSection() {
   return (
-    <section id="ingredients" style={{ padding: "120px 24px", background: "linear-gradient(180deg,#000,#03020a,#000)" }}>
+    <section id="ingredients" className="section-pad" style={{ background: "linear-gradient(180deg,#000,#03020a,#000)" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", textAlign: "center" }}>
         <div className="label-sm" style={{ color: "#D4AF37", marginBottom: 20 }}>What&apos;s Inside</div>
         <h2 className="display-lg gradient-gold">THE FORMULA</h2>
@@ -148,7 +148,7 @@ export function IngredientsSection() {
 
 export function SocialProof() {
   return (
-    <section id="social" style={{ padding:"120px 24px", background:"linear-gradient(180deg,#000,#050305,#000)" }}>
+    <section id="social" className="section-pad" style={{ background:"linear-gradient(180deg,#000,#050305,#000)" }}>
       <div style={{ maxWidth:1100, margin:"0 auto", textAlign:"center" }}>
         <div className="label-sm" style={{ color:"#D4AF37", marginBottom:20 }}>The Numbers Don't Lie</div>
         <h2 className="display-lg gradient-gold">SOCIAL PROOF</h2>
@@ -198,14 +198,14 @@ export function ResearchForm() {
   }
 
   return (
-    <section id="join" style={{ padding:"120px 24px", background:"linear-gradient(180deg,#000,#060410,#000)" }}>
+    <section id="join" className="section-pad" style={{ background:"linear-gradient(180deg,#000,#060410,#000)" }}>
       <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
         <div className="label-sm" style={{ color:"#D4AF37", marginBottom:20 }}>Shape The Product</div>
         <h2 className="display-lg gradient-gold">MARKET RESEARCH</h2>
         <p style={{ color:"rgba(192,192,192,0.55)", marginBottom:48 }}>
           Your voice builds VYRO. Complete this 2-minute survey and get early access, launch discounts, and a chance to become a Beta Tester.
         </p>
-        <div className="glass-strong" style={{ padding:"48px 40px", textAlign:"left" }}>
+        <div className="glass-strong research-pad" style={{ textAlign:"left" }}>
           <AnimatePresence mode="wait">
             {status === "success" ? (
               <motion.div key="success"
@@ -319,8 +319,7 @@ export function PreOrderSection() {
   };
 
   return (
-    <section id="preorder" style={{
-      padding: "120px 24px",
+    <section id="preorder" className="section-pad" style={{
       background: "linear-gradient(180deg,#000,#07050f,#000)",
       position: "relative", overflow: "hidden",
     }}>
@@ -404,11 +403,12 @@ export function PreOrderSection() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.16,1,0.3,1] }}
-              style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20, padding: "40px 36px",
-                border: "1px solid rgba(212,175,55,0.15)", backdropFilter: "blur(24px)" }}>
+              style={{ background: "rgba(255,255,255,0.03)", borderRadius: 20,
+                border: "1px solid rgba(212,175,55,0.15)", backdropFilter: "blur(24px)" }}
+              className="form-pad">
 
               {mode === "preorder" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                <div className="form-grid-2">
                   <div><label style={labelStyle}>Full Name</label>
                     <input style={inputStyle} value={form.name} onChange={up("name")} placeholder="Your name" onFocus={focus} onBlur={blur} /></div>
                   <div><label style={labelStyle}>Email</label>
@@ -431,7 +431,7 @@ export function PreOrderSection() {
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+                <div className="form-grid-2">
                   <div><label style={labelStyle}>Name</label>
                     <input style={inputStyle} value={form.name} onChange={up("name")} placeholder="Your name" onFocus={focus} onBlur={blur} /></div>
                   <div><label style={labelStyle}>Email</label>

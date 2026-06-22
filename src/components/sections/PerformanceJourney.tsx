@@ -373,10 +373,9 @@ function SceneCard({ scene }: { scene: Scene }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: false, amount: 0.4 });
   return (
-    <div ref={ref} style={{ minHeight:"100vh", display:"flex", alignItems:"center",
-      padding:"80px 24px", background:scene.bgGradient, position:"relative" }}>
-      <div style={{ maxWidth:1200, margin:"0 auto", width:"100%",
-        display:"grid", gridTemplateColumns:"1fr 1fr", gap:64, alignItems:"center" }}>
+    <div ref={ref} className="scene-pad" style={{ minHeight:"100vh", display:"flex", alignItems:"center",
+      background:scene.bgGradient, position:"relative" }}>
+      <div className="scene-grid">
         <div>
           <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:inView?1:0, y:inView?0:20 }}
             transition={{ duration:0.5 }}
@@ -450,7 +449,7 @@ function SceneCard({ scene }: { scene: Scene }) {
 export default function PerformanceJourney() {
   return (
     <section id="performance">
-      <div id="story" style={{ padding:"120px 24px 80px", textAlign:"center",
+      <div id="story" style={{ padding:"clamp(64px,10vw,120px) 16px clamp(48px,8vw,80px)", textAlign:"center",
         background:"linear-gradient(180deg,#000,#050508)" }}>
         <div className="label-sm" style={{ color:"#D4AF37", letterSpacing:8, marginBottom:20,
           fontFamily:"var(--font-orbitron,sans-serif)", textShadow:"0 0 20px rgba(212,175,55,0.4)" }}>
