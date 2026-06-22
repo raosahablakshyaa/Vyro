@@ -2,6 +2,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
+// ─── Shared fetch helper ──────────────────────────────────────────────────────
+async function postJSON(url: string, body: Record<string, unknown>) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  return { ok: res.ok, status: res.status, data };
+}
+
 const INGREDIENTS = [
   {
     icon: "⚡", name: "Natural Caffeine",      dose: "150mg",
@@ -164,6 +175,28 @@ export function SocialProof() {
 }
 
 export function ResearchForm() {
+  const [email, setEmail]       = useState("");
+  const [status, setStatus]     = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage]   = useState("");
+
+  async function handleSubmit() {
+    if (!email.trim()) return;
+    setStatus("loading");
+    try {
+      const { ok, data } = await postJSON("/api/waitlist", { email });
+      if (ok || data?.alreadyExists) {
+        setStatus("success");
+        setMessage(data?.message ?? "You're on the list!");
+      } else {
+        setStatus("error");
+        setMessage(data?.error ?? "Something went wrong. Try again.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("Network error. Please try again.");
+    }
+  }
+
   return (
     <section id="join" style={{ padding:"120px 24px", background:"linear-gradient(180deg,#000,#060410,#000)" }}>
       <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
@@ -173,8 +206,51 @@ export function ResearchForm() {
           Your voice builds VYRO. Complete this 2-minute survey and get early access, launch discounts, and a chance to become a Beta Tester.
         </p>
         <div className="glass-strong" style={{ padding:"48px 40px", textAlign:"left" }}>
-          <input className="vyro-input" placeholder="Email address" type="email" style={{ marginBottom:16 }} />
-          <button className="btn-vyro" style={{ width:"100%" }}>Join The Launch</button>
+          <AnimatePresence mode="wait">
+            {status === "success" ? (
+              <motion.div key="success"
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
+                <div style={{ fontFamily: "var(--font-orbitron,sans-serif)", fontWeight: 700,
+                  fontSize: 16, color: "#FFD700", marginBottom: 8 }}>
+                  {message}
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(192,192,192,0.5)" }}>
+                  We&apos;ll be in touch before launch day.
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="form" initial={{ opacity: 1 }}>
+                <input
+                  className="vyro-input"
+                  placeholder="Email address"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  disabled={status === "loading"}
+                  style={{ marginBottom: 12 }}
+                />
+                {status === "error" && (
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                    style={{ fontSize: 11, color: "#FF2D55", marginBottom: 10, letterSpacing: 0.5 }}>
+                    {message}
+                  </motion.div>
+                )}
+                <motion.button
+                  className="btn-vyro"
+                  style={{ width: "100%", opacity: status === "loading" ? 0.7 : 1 }}
+                  whileHover={{ scale: status === "loading" ? 1 : 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSubmit}
+                  disabled={status === "loading"}
+                >
+                  {status === "loading" ? "Joining..." : "Join The Launch"}
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </section>
@@ -185,8 +261,10 @@ export function ResearchForm() {
 type FormMode = "preorder" | "partner";
 
 export function PreOrderSection() {
-  const [mode, setMode] = useState<FormMode>("preorder");
+  const [mode, setMode]         = useState<FormMode>("preorder");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "", city: "",
     quantity: "1", flavor: "Original Gold",
@@ -194,6 +272,29 @@ export function PreOrderSection() {
   });
   const up = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(p => ({ ...p, [k]: e.target.value }));
+
+  async function handleSubmit() {
+    setLoading(true);
+    setApiError(null);
+    try {
+      const endpoint = mode === "preorder" ? "/api/preorder" : "/api/partner";
+      const payload  = mode === "preorder"
+        ? { name: form.name, email: form.email, phone: form.phone, city: form.city, flavor: form.flavor, quantity: form.quantity }
+        : { name: form.name, email: form.email, company: form.company, website: form.website, type: form.type, message: form.message };
+
+      const { ok, data } = await postJSON(endpoint, payload);
+      if (ok) {
+        setSubmitted(true);
+      } else {
+        const msg = data?.errors?.join(" ") ?? data?.error ?? "Something went wrong. Please try again.";
+        setApiError(msg);
+      }
+    } catch {
+      setApiError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "12px 16px",
@@ -250,7 +351,7 @@ export function PreOrderSection() {
           background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 4,
           border: "1px solid rgba(212,175,55,0.12)", maxWidth: 340, margin: "0 auto 40px" }}>
           {(["preorder","partner"] as FormMode[]).map(m => (
-            <motion.button key={m} onClick={() => { setMode(m); setSubmitted(false); }}
+            <motion.button key={m} onClick={() => { setMode(m); setSubmitted(false); setApiError(null); }}
               whileTap={{ scale: 0.97 }}
               style={{
                 flex: 1, padding: "10px 0", borderRadius: 9, border: "none",
@@ -367,10 +468,22 @@ export function PreOrderSection() {
                 ))}
               </div>
 
-              <motion.button className="btn-vyro" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                onClick={() => setSubmitted(true)}
-                style={{ width: "100%", fontSize: 13, letterSpacing: 3 }}>
-                {mode === "preorder" ? "Confirm Pre-Order →" : "Submit Application →"}
+              {apiError && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                  style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8,
+                    background: "rgba(255,45,85,0.1)", border: "1px solid rgba(255,45,85,0.3)",
+                    fontSize: 12, color: "#FF2D55", letterSpacing: 0.4 }}>
+                  {apiError}
+                </motion.div>
+              )}
+
+              <motion.button className="btn-vyro" whileHover={{ scale: loading ? 1 : 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{ width: "100%", fontSize: 13, letterSpacing: 3, opacity: loading ? 0.7 : 1 }}>
+                {loading
+                  ? "Submitting..."
+                  : mode === "preorder" ? "Confirm Pre-Order →" : "Submit Application →"}
               </motion.button>
             </motion.div>
           )}

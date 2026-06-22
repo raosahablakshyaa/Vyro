@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useRef } from "react";
+import { useState, Suspense, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Canvas } from "@react-three/fiber";
 import dynamic from "next/dynamic";
@@ -385,11 +385,346 @@ function SettingsTab() {
   );
 }
 
+// ─── Leads tab ────────────────────────────────────────────────────────────────
+
+type LeadType = "all" | "waitlist" | "preorder" | "partner";
+
+interface Lead {
+  id: string;
+  type: "waitlist" | "preorder" | "partner";
+  createdAt: string;
+  email?: string;
+  name?: string;
+  phone?: string;
+  city?: string;
+  flavor?: string;
+  quantity?: string;
+  company?: string;
+  website?: string;
+  partnerType?: string;
+  message?: string;
+  ip?: string;
+}
+
+interface LeadsResponse {
+  success: boolean;
+  stats: { total: number; waitlist: number; preorder: number; partner: number };
+  pagination: { page: number; limit: number; total: number; pages: number };
+  leads: Lead[];
+}
+
+const TYPE_COLOR: Record<string, string> = {
+  waitlist: "#00D4FF",
+  preorder: "#D4AF37",
+  partner:  "#8B00FF",
+};
+
+const TYPE_ICON: Record<string, string> = {
+  waitlist: "📋",
+  preorder: "⚡",
+  partner:  "🤝",
+};
+
+function LeadRow({ lead }: { lead: Lead }) {
+  const [open, setOpen] = useState(false);
+  const color = TYPE_COLOR[lead.type] ?? A.gold;
+
+  const primary = lead.name ?? lead.email ?? lead.id;
+  const secondary = lead.email ?? "";
+  const date = new Date(lead.createdAt).toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const extra: [string, string][] = [];
+  if (lead.phone)       extra.push(["Phone", lead.phone]);
+  if (lead.city)        extra.push(["City", lead.city]);
+  if (lead.flavor)      extra.push(["Flavour", lead.flavor]);
+  if (lead.quantity)    extra.push(["Qty (cases)", lead.quantity]);
+  if (lead.company)     extra.push(["Company", lead.company]);
+  if (lead.website)     extra.push(["Website", lead.website]);
+  if (lead.partnerType) extra.push(["Partner Type", lead.partnerType]);
+  if (lead.message)     extra.push(["Message", lead.message]);
+  if (lead.ip)          extra.push(["IP", lead.ip]);
+
+  return (
+    <motion.div layout style={{ marginBottom: 8 }}>
+      <div
+        onClick={() => extra.length > 0 && setOpen(o => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "12px 16px", borderRadius: 10,
+          background: open ? `${color}0a` : A.card,
+          border: `1px solid ${open ? color + "40" : A.border}`,
+          cursor: extra.length > 0 ? "pointer" : "default",
+          transition: "background 0.2s, border-color 0.2s",
+        }}
+      >
+        {/* Type badge */}
+        <div style={{
+          flexShrink: 0, width: 28, height: 28, borderRadius: 6,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: `${color}18`, border: `1px solid ${color}40`,
+          fontSize: 14,
+        }}>
+          {TYPE_ICON[lead.type]}
+        </div>
+
+        {/* Name / email */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: A.text, fontWeight: 600,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {primary}
+          </div>
+          {secondary && secondary !== primary && (
+            <div style={{ fontSize: 10, color: A.muted, marginTop: 1 }}>{secondary}</div>
+          )}
+        </div>
+
+        {/* Type pill */}
+        <div style={{
+          flexShrink: 0, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase",
+          color, padding: "3px 8px", borderRadius: 999,
+          background: `${color}12`, border: `1px solid ${color}30`,
+        }}>
+          {lead.type}
+        </div>
+
+        {/* Date */}
+        <div style={{ flexShrink: 0, fontSize: 10, color: A.muted, textAlign: "right" }}>
+          {date}
+        </div>
+
+        {extra.length > 0 && (
+          <div style={{ flexShrink: 0, fontSize: 11, color: A.muted, transition: "transform 0.2s",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+            ▾
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {open && extra.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div style={{
+              margin: "2px 0 0", padding: "16px 20px",
+              background: `${color}06`, borderRadius: "0 0 10px 10px",
+              border: `1px solid ${color}25`, borderTop: "none",
+              display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "10px 24px",
+            }}>
+              {extra.map(([k, v]) => (
+                <div key={k}>
+                  <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+                    color: A.muted, marginBottom: 3 }}>{k}</div>
+                  <div style={{ fontSize: 12, color: A.text, wordBreak: "break-word" }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function LeadsTab() {
+  const [filter, setFilter]   = useState<LeadType>("all");
+  const [page, setPage]       = useState(1);
+  const [data, setData]       = useState<LeadsResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
+  const [secret, setSecret]   = useState(
+    typeof window !== "undefined" ? (localStorage.getItem("vyro-admin-secret") ?? "") : ""
+  );
+  const [secretInput, setSecretInput] = useState(secret);
+
+  const fetchLeads = useCallback(async (s: string, f: LeadType, p: number) => {
+    if (!s) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ secret: s, limit: "50", page: String(p) });
+      if (f !== "all") params.set("type", f);
+      const res  = await fetch(`/api/leads?${params}`);
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json?.error ?? "Failed to load leads.");
+        setData(null);
+      } else {
+        setData(json);
+      }
+    } catch {
+      setError("Network error. Could not reach /api/leads.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Auto-fetch when secret / filter / page changes (if secret already set)
+  useEffect(() => {
+    if (secret) fetchLeads(secret, filter, page);
+  }, [secret, filter, page, fetchLeads]);
+
+  function applySecret() {
+    const s = secretInput.trim();
+    localStorage.setItem("vyro-admin-secret", s);
+    setSecret(s);
+    setPage(1);
+  }
+
+  const stats = data?.stats;
+
+  return (
+    <div>
+      {/* Secret input */}
+      {!secret ? (
+        <Card title="Admin Secret Required" icon="🔐">
+          <p style={{ fontSize: 12, color: A.muted, marginBottom: 16, lineHeight: 1.6 }}>
+            Enter your <code style={{ color: A.gold }}>ADMIN_SECRET</code> to view leads.
+            This is stored only in your browser&apos;s localStorage.
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input
+              type="password"
+              value={secretInput}
+              onChange={e => setSecretInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && applySecret()}
+              placeholder="Enter ADMIN_SECRET…"
+              style={{
+                flex: 1, padding: "10px 14px",
+                background: "rgba(255,255,255,0.04)",
+                border: `1px solid ${A.border}`, borderRadius: 8,
+                color: A.text, fontSize: 13, outline: "none",
+              }}
+            />
+            <motion.button className="btn-vyro" onClick={applySecret}
+              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              style={{ fontSize: 11, padding: "10px 22px" }}>
+              Unlock
+            </motion.button>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* Stats row */}
+          {stats && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
+              {[
+                { label: "Total",     value: stats.total,    color: A.gold },
+                { label: "Waitlist",  value: stats.waitlist, color: TYPE_COLOR.waitlist },
+                { label: "Pre-Orders",value: stats.preorder, color: TYPE_COLOR.preorder },
+                { label: "Partners",  value: stats.partner,  color: TYPE_COLOR.partner },
+              ].map(s => (
+                <div key={s.label} style={{
+                  padding: "18px 20px", borderRadius: 12,
+                  background: `${s.color}0d`, border: `1px solid ${s.color}25`, textAlign: "center",
+                }}>
+                  <div style={{ fontFamily: "var(--font-orbitron,sans-serif)", fontWeight: 900,
+                    fontSize: 28, color: s.color, textShadow: `0 0 16px ${s.color}40` }}>
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, color: A.muted, marginTop: 4, textTransform: "uppercase" }}>
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Filter + refresh bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            {(["all","waitlist","preorder","partner"] as LeadType[]).map(f => (
+              <motion.button key={f} onClick={() => { setFilter(f); setPage(1); }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  padding: "7px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                  fontSize: 10, letterSpacing: 2, textTransform: "uppercase",
+                  fontFamily: "var(--font-orbitron,sans-serif)", fontWeight: 700,
+                  background: filter === f ? A.gold : "rgba(255,255,255,0.05)",
+                  color: filter === f ? "#000" : A.muted,
+                  transition: "all 0.2s",
+                }}>
+                {f === "all" ? "All" : f}
+              </motion.button>
+            ))}
+            <div style={{ flex: 1 }} />
+            <motion.button onClick={() => fetchLeads(secret, filter, page)}
+              whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}
+              disabled={loading}
+              style={{ padding: "7px 16px", borderRadius: 8,
+                border: `1px solid ${A.border}`, background: "transparent",
+                color: A.gold, fontSize: 11, cursor: "pointer", letterSpacing: 1 }}>
+              {loading ? "Loading…" : "↻ Refresh"}
+            </motion.button>
+            <motion.button onClick={() => { setSecret(""); setSecretInput(""); localStorage.removeItem("vyro-admin-secret"); }}
+              whileTap={{ scale: 0.95 }}
+              style={{ padding: "7px 14px", borderRadius: 8,
+                border: `1px solid ${A.danger}40`, background: "transparent",
+                color: A.danger, fontSize: 10, cursor: "pointer", letterSpacing: 1 }}>
+              Lock
+            </motion.button>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 8,
+              background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)",
+              fontSize: 12, color: "#FF2D55" }}>
+              {error}
+            </div>
+          )}
+
+          {/* Lead rows */}
+          {loading && !data && (
+            <div style={{ textAlign: "center", padding: 60, color: A.muted, fontSize: 12 }}>
+              Loading leads…
+            </div>
+          )}
+
+          {data && data.leads.length === 0 && (
+            <div style={{ textAlign: "center", padding: 60, color: A.muted, fontSize: 12 }}>
+              No leads yet for this filter.
+            </div>
+          )}
+
+          {data && data.leads.map(lead => <LeadRow key={lead.id} lead={lead} />)}
+
+          {/* Pagination */}
+          {data && data.pagination.pages > 1 && (
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 24 }}>
+              {Array.from({ length: data.pagination.pages }, (_, i) => i + 1).map(p => (
+                <motion.button key={p} onClick={() => setPage(p)}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    border: `1px solid ${p === page ? A.gold : A.border}`,
+                    background: p === page ? `${A.gold}18` : "transparent",
+                    color: p === page ? A.gold : A.muted,
+                    fontSize: 12, cursor: "pointer",
+                  }}>
+                  {p}
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Sidebar nav ──────────────────────────────────────────────────────────────
 const TABS = [
   { id: "flavours", label: "Flavours",  icon: "🎨" },
   { id: "content",  label: "Content",   icon: "✏️" },
   { id: "settings", label: "Settings",  icon: "⚙️" },
+  { id: "leads",    label: "Leads",     icon: "📊" },
 ] as const;
 
 type TabId = typeof TABS[number]["id"];
@@ -504,6 +839,7 @@ export default function AdminPage() {
               {tab === "flavours" && <FlavoursTab />}
               {tab === "content"  && <ContentTab />}
               {tab === "settings" && <SettingsTab />}
+              {tab === "leads"    && <LeadsTab />}
             </motion.div>
           </AnimatePresence>
         </div>
