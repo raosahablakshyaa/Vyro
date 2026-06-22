@@ -1,0 +1,329 @@
+@import "tailwindcss";
+
+/* ─── VYRO Design System ──────────────────────────────────────────── */
+:root {
+  --bg-primary: #000000;
+  --bg-secondary: #050508;
+  --bg-card: rgba(255, 255, 255, 0.04);
+
+  /* Gold palette */
+  --gold-bright:  #FFD700;
+  --gold-primary: #D4AF37;
+  --gold-muted:   #8B6914;
+
+  /* Silver palette */
+  --silver-bright:  #E8E8E8;
+  --silver-primary: #C0C0C0;
+  --silver-muted:   #6B6B6B;
+
+  /* Neon accents */
+  --neon-blue:    #00D4FF;
+  --neon-purple:  #8B00FF;
+  --neon-green:   #00FF88;
+  --neon-red:     #FF2D55;
+  --neon-orange:  #FF6B00;
+
+  /* Typography */
+  --font-display: 'Orbitron', sans-serif;
+  --font-body:    'Inter', sans-serif;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg-primary);
+  color: var(--silver-bright);
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--silver-bright);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: none; /* replaced by CustomCursor on main site */
+}
+
+/* Admin pages always use the native OS cursor */
+body.admin-page,
+body.admin-page * {
+  cursor: auto !important;
+}
+
+/* ─── Custom scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar              { width: 4px; }
+::-webkit-scrollbar-track        { background: #000; }
+::-webkit-scrollbar-thumb        { background: var(--gold-primary); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover  { background: var(--gold-bright); }
+
+/* ─── Custom cursor ────────────────────────────────────────────────── */
+.cursor-dot {
+  width: 8px; height: 8px;
+  background: var(--gold-bright);
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease;
+  mix-blend-mode: difference;
+}
+.cursor-ring {
+  width: 36px; height: 36px;
+  border: 1.5px solid var(--gold-primary);
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease, width 0.2s, height 0.2s, opacity 0.2s;
+  opacity: 0.7;
+}
+
+/* ─── Glassmorphism ────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 20px;
+}
+
+/* ─── Typography utilities ─────────────────────────────────────────── */
+.text-gold       { color: var(--gold-primary); }
+.text-gold-bright{ color: var(--gold-bright); }
+.text-neon-blue  { color: var(--neon-blue); }
+.text-silver     { color: var(--silver-primary); }
+
+.gradient-gold {
+  background: linear-gradient(135deg, var(--gold-muted), var(--gold-bright), var(--gold-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-neon {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple), var(--neon-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Glow effects ─────────────────────────────────────────────────── */
+.glow-gold   { text-shadow: 0 0 20px var(--gold-bright), 0 0 40px var(--gold-primary), 0 0 80px var(--gold-muted); }
+.glow-blue   { text-shadow: 0 0 20px var(--neon-blue),   0 0 40px var(--neon-blue); }
+.glow-purple { text-shadow: 0 0 20px var(--neon-purple),  0 0 40px var(--neon-purple); }
+
+.box-glow-gold {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3),
+              0 0 60px rgba(212, 175, 55, 0.15),
+              inset 0 1px 0 rgba(255, 215, 0, 0.2);
+}
+
+.box-glow-neon {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3),
+              0 0 60px rgba(0, 212, 255, 0.1);
+}
+
+/* ─── Noise texture overlay ────────────────────────────────────────── */
+.noise::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* ─── Animated gradients ───────────────────────────────────────────── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-15px) rotate(1deg); }
+  66%       { transform: translateY(-8px) rotate(-1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 20px var(--gold-primary); }
+  50%       { opacity: 0.7; box-shadow: 0 0 60px var(--gold-bright), 0 0 100px var(--gold-primary); }
+}
+
+@keyframes particle-drift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-200px) translateX(50px) scale(0); opacity: 0; }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes energyRing {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes textReveal {
+  0%   { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0% 0 0); }
+}
+
+@keyframes counterUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float         { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow    { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-particle      { animation: particle-drift 4s linear infinite; }
+.animate-shimmer       { animation: shimmer 3s linear infinite; background-size: 200% 100%; }
+.animate-energy-ring   { animation: energyRing 2s ease-out infinite; }
+.animate-gradient      { animation: gradientShift 8s ease infinite; background-size: 400% 400%; }
+
+/* ─── Section utilities ────────────────────────────────────────────── */
+.section-full { min-height: 100vh; position: relative; overflow: hidden; }
+
+/* ─── HUD / tech overlay lines ─────────────────────────────────────── */
+.hud-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+  height: 1px; width: 100%;
+  opacity: 0.3;
+}
+
+/* ─── Button styles ────────────────────────────────────────────────── */
+.btn-vyro {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 14px 40px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #000;
+  background: linear-gradient(135deg, var(--gold-muted), var(--gold-bright), var(--gold-muted));
+  background-size: 200% 200%;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: gradientShift 3s ease infinite;
+}
+.btn-vyro:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 30px var(--gold-bright), 0 0 60px var(--gold-primary);
+}
+.btn-vyro::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  transform: skewX(-20deg) translateX(-200%);
+  transition: transform 0.6s ease;
+}
+.btn-vyro:hover::before { transform: skewX(-20deg) translateX(200%); }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 38px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-primary);
+  background: transparent;
+  border: 1px solid var(--gold-primary);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-ghost:hover {
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+  color: var(--gold-bright);
+  border-color: var(--gold-bright);
+}
+
+/* ─── Form field styles ────────────────────────────────────────────── */
+.vyro-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 8px;
+  color: var(--silver-bright);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.vyro-input::placeholder { color: rgba(192,192,192,0.4); }
+.vyro-input:focus {
+  border-color: var(--gold-primary);
+  background: rgba(212, 175, 55, 0.06);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12), 0 0 20px rgba(212, 175, 55, 0.1);
+}
+select.vyro-input option { background: #0a0a0a; color: var(--silver-bright); }
+
+/* ─── Canvas / 3D container ────────────────────────────────────────── */
+.canvas-container { position: absolute; inset: 0; z-index: 0; }
+
+/* ─── Responsive font scaling ──────────────────────────────────────── */
+.display-xl {
+  font-size: clamp(2.5rem, 8vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.display-lg {
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.display-md {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 700;
+}
+.label-sm {
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ─── Separator lines ──────────────────────────────────────────────── */
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+  width: 100%;
+  margin: 4px 0;
+}
+
+/* ─── Loading screen ───────────────────────────────────────────────── */
+.loader-bar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold-muted), var(--gold-bright), var(--neon-blue));
+  animation: shimmer 1.5s linear infinite;
+  background-size: 200% 100%;
+}
